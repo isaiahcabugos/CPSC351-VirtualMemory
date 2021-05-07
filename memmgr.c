@@ -131,35 +131,46 @@ int get_available_frame(unsigned page) {    // TODO : FINISHED
 
 unsigned getframe_fifo(FILE* fstore, unsigned logic_add, unsigned page,
          int *page_fault_count, int *tlb_hit_count) {
+  //  fprintf(stderr, "Brr.\n"); (Debugging)
   // tlb hit
   if (logic_add == 36874) {
+    // fprintf(stderr, "Brr0.\n"); (For Debugging)
     int y = 7;
   }
 
+  // printf("Brr1.\n"); (For Debugging)
   int tlb_index = tlb_contains(page);
   if (tlb_index != -1){
+    // printf("Brr2.\n"); (For Debugging)
     (*tlb_hit_count)++;
     return tlb[tlb_index][1];
   }
   
   // tlb miss, page table hit
    if (page_table[page] != -1){
+    //  printf("Brr3.\n"); (For Debugging)
     update_tlb(page);
     return page_table[page];
   }
   
   // page table miss -> page fault
   // find location in backing_store
-  int offset = (logic_add / FRAME_SIZE) * FRAME_SIZE;
+  // printf("Brr4.\n"); (For Debugging)
+  int offset = (logic_add / FRAMES_PART2) * FRAMES_PART2;
   fseek(fstore, offset, 0);
   
   // bring data into memory, update tlb and page table
+  // printf("Brr5.\n"); (For Debugging)
   page_table[page] = current_frame;
-  current_frame = (current_frame + 1) % 256;
+  //current_frame = (current_frame + 1) % 128;
+  current_frame = (get_available_frame(current_frame) + 1) % 128; 
   (*page_fault_count)++;
-  fread(&main_mem[page_table[page] * FRAME_SIZE], sizeof(char), 256, fstore);
+  // printf("Brr6.\n"); (For Debugging)
+  fread(&main_mem_fifo[page_queue[page] * FRAMES_PART2], sizeof(char), 128, fstore);
+  // printf("Brr7.\n"); (For Debugging)
   update_tlb(page);
-  return page_table[page];
+  // printf("Brr8.\n"); (For Debugging)
+  return current_frame;
 }
 
 void open_files(FILE** fadd, FILE** fcorr, FILE** fstore) {
@@ -268,6 +279,7 @@ void simulate_pages_frames_not_equal(void) {
     page   = getpage(  logic_add);
     offset = getoffset(logic_add);
     frame = getframe_fifo(fstore, logic_add, page, &page_fault_count, &tlb_hit_count);
+    printf("Broo.");
 
     physical_add = frame * FRAME_SIZE + offset;
     int val = (int)(main_mem_fifo[physical_add]);
