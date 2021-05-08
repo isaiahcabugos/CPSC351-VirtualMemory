@@ -132,22 +132,31 @@ int get_available_frame(unsigned page) {    // TODO : FINISHED
 unsigned getframe_fifo(FILE* fstore, unsigned logic_add, unsigned page, //Does not work
          int *page_fault_count, int *tlb_hit_count) {
   //  fprintf(stderr, "Brr.\n"); (Debugging)
-  // tlb hit
-  if (logic_add == 36874) {
+
+    if (logic_add == 36874) {
     // fprintf(stderr, "Brr0.\n"); (For Debugging)
     int y = 7;
   }
+  // tlb hit
+  int tlb_hit = tlb_contains(page);
+  if (tlb_hit != -1) {
 
-  // printf("Brr1.\n"); (For Debugging)
-  int tlb_index = tlb_contains(page);
-  if (tlb_index != -1){
-    // printf("Brr2.\n"); (For Debugging)
-    (*tlb_hit_count)++;
-    return tlb[tlb_index][1];
+    if(page_queue[tlb[tlb_hit][1]] == page) { // if found in tlb, increment hit count, return it
+      (*tlb_hit_count)++;
+      return page_table[page];
+    } 
   }
+
+  // // printf("Brr1.\n"); (For Debugging)
+  // int tlb_index = tlb_contains(page);
+  // if (tlb_index != -1){
+  //   // printf("Brr2.\n"); (For Debugging)
+  //   (*tlb_hit_count)++;
+  //   return tlb[tlb_index][1];
+  // }
   
   // tlb miss, page table hit
-   if (page_table[page] != -1){
+   if (page_table[page] != -1 && page_queue[page_table[page]] == page){
     //  printf("Brr3.\n"); (For Debugging)
     update_tlb(page);
     return page_table[page];
@@ -156,21 +165,27 @@ unsigned getframe_fifo(FILE* fstore, unsigned logic_add, unsigned page, //Does n
   // page table miss -> page fault
   // find location in backing_store
   // printf("Brr4.\n"); (For Debugging)
-  int offset = (logic_add / FRAMES_PART2) * FRAMES_PART2;
+  int offset = (logic_add / FRAMES_PART1) * FRAMES_PART1;
   fseek(fstore, offset, 0);
   
   // bring data into memory, update tlb and page table
   // printf("Brr5.\n"); (For Debugging)
-  page_table[page] = current_frame;
+
+  /* Doesn't work
+  //current_frame = current_frame;
   //current_frame = (current_frame + 1) % 128;
-  current_frame = (get_available_frame(current_frame) + 1) % 128; 
+  //current_frame = (get_available_frame(current_frame) + 1) % 128; 
+   Doesn't work */
+
+  current_frame = get_available_frame(page);
+  page_table[page] = current_frame;
   (*page_fault_count)++;
   // printf("Brr6.\n"); (For Debugging)
-  fread(&main_mem_fifo[page_queue[page] * FRAMES_PART2], sizeof(char), 128, fstore);
+  fread(&main_mem_fifo[current_frame * FRAMES_PART1], sizeof(char), 256, fstore);
   // printf("Brr7.\n"); (For Debugging)
   update_tlb(page);
   // printf("Brr8.\n"); (For Debugging)
-  return current_frame;
+  return page_table[page];
 }
 
 void open_files(FILE** fadd, FILE** fcorr, FILE** fstore) {
@@ -310,7 +325,7 @@ int main(int argc, const char* argv[]) {
   }
 
   simulate_pages_frames_equal(); // 256 physical frames
-  //simulate_pages_frames_not_equal(); // 128 physical frames
+  simulate_pages_frames_not_equal(); // 128 physical frames
 
   // Statistics
   printf("\n\nnPages == nFrames Statistics (256 frames):\n");
