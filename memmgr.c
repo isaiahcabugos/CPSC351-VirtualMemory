@@ -310,7 +310,7 @@ int main(int argc, const char* argv[]) {
   }
 
   simulate_pages_frames_equal(); // 256 physical frames
-  simulate_pages_frames_not_equal(); // 128 physical frames
+  //simulate_pages_frames_not_equal(); // 128 physical frames
 
   // Statistics
   printf("\n\nnPages == nFrames Statistics (256 frames):\n");
