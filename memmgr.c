@@ -129,7 +129,7 @@ int get_available_frame(unsigned page) {    // TODO : FINISHED
   return -1;   // failed to find a value
 }
 
-unsigned getframe_fifo(FILE* fstore, unsigned logic_add, unsigned page,
+unsigned getframe_fifo(FILE* fstore, unsigned logic_add, unsigned page, //Does not work
          int *page_fault_count, int *tlb_hit_count) {
   //  fprintf(stderr, "Brr.\n"); (Debugging)
   // tlb hit
